@@ -168,7 +168,18 @@
   }
 
   start.$inject = ['$timeout', '$rootScope'];
+  // SOGo 한국어 번역의 메일함 용량 문구 "0.03% : 10240 MB 사용됨" 은 10240MB 를 이미 쓴 것처럼 읽힌다.
+  // 영어 원문은 "0.03% used on 10240 MB" (10240MB 중 0.03% 사용). 이 번역 문구일 때만 바꾼다.
+  function fixLabels() {
+    try {
+      if (window.labels && window.labels.quotasFormat === '%{0}% : %{1} MB 사용됨') {
+        window.labels.quotasFormat = '%{1} MB 중 %{0}% 사용';
+      }
+    } catch (e) {}
+  }
+
   function start($timeout, $rootScope) {
+    fixLabels();
     injectStyle();
     applyMode();
     // 툴바는 Angular 가 그린 뒤에 생기므로 잠시 재시도
