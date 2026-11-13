@@ -123,43 +123,78 @@
     s.className = 'material-icons'; s.setAttribute('aria-hidden', 'true'); s.textContent = name;
     return s;
   }
+  // 원래 버튼이 지금 눌릴 수 있는지 (권한에 따라 ng-hide / disabled 가 붙는다)
+  function usable(btn) {
+    return !!btn && !btn.disabled && !btn.closest('.ng-hide');
+  }
+  function setButton(btn, iconName, text) {
+    var i = btn.querySelector('.material-icons');
+    if (i && i.textContent !== iconName) i.textContent = iconName;
+    var t = btn.querySelector('.ig-label');
+    if (t && t.textContent !== text) t.textContent = text;
+  }
+  // 원래 버튼의 지금 상태(표시 여부·라벨·아이콘)를 대리 버튼에 그대로 옮긴다.
+  // 폴더를 바꾸면 원래 버튼이 새로 그려지고 주소록 권한도 나중에 도착하므로, 매번 다시 읽는다
   function syncCompose() {
     var box = document.getElementById(CMP_ID);
     if (!box) return;
     var fab = currentFab();
-    var hidden = !fab || fab.classList.contains('ng-hide');
-    box.classList.toggle('ig-hidden', hidden);
-    document.documentElement.classList.toggle('ig-has-side-compose', !hidden);
+    var acts = fabActions(fab);
+    var mainOk = !!fab && !fab.classList.contains('ng-hide') && usable(acts[0]);
+    var altOk = mainOk && usable(acts[1]);
+    var main = box.querySelector('.ig-compose-main');
+    var alt = box.querySelector('.ig-compose-alt');
+    if (mainOk) {
+      var trigger = fab.querySelector('md-fab-trigger button') || acts[0];
+      setButton(main, iconOf(trigger) || 'add', trigger.getAttribute('aria-label') || '');
+    }
+    if (altOk) {
+      var t = acts[1].getAttribute('aria-label') || '';
+      setButton(alt, iconOf(acts[1]), '');
+      if (alt.title !== t) { alt.title = t; alt.setAttribute('aria-label', t); }
+    }
+    alt.hidden = !altOk;
+    box.classList.toggle('ig-hidden', !mainOk);
+    // 대리 버튼이 실제로 쓸 수 있을 때만 원래 둥근 버튼을 숨긴다
+    document.documentElement.classList.toggle('ig-has-side-compose', mainOk);
+  }
+  // 다이제스트마다 부르는 가벼운 상태 요약: 바뀔 때만 syncCompose 가 돈다
+  function composeState() {
+    var fab = currentFab();
+    if (!fab) return '';
+    var acts = fabActions(fab);
+    return [fab.classList.contains('ng-hide'), acts.length].concat(acts.map(function (a) {
+      return usable(a) + (a.getAttribute('aria-label') || '');
+    })).join('|');
+  }
+  function runAction(index) {
+    var a = fabActions(currentFab())[index];
+    if (usable(a)) a.click();
+    else syncCompose();
   }
   function injectCompose() {
     var side = document.querySelector('md-sidenav.md-sidenav-left');
     var fab = currentFab();
     if (!side || !fab) return false;
-    var acts = fabActions(fab);
-    if (!acts.length) return false;
+    if (!fabActions(fab).length) return false;
     var box = document.getElementById(CMP_ID);
     if (!box || box.parentNode !== side) {
       if (box) box.parentNode.removeChild(box);
       box = document.createElement('div');
       box.id = CMP_ID;
-      var trigger = fab.querySelector('md-fab-trigger button') || acts[0];
       var main = document.createElement('button');
       main.type = 'button'; main.className = 'ig-compose-main';
-      main.appendChild(icon(iconOf(trigger) || 'add'));
+      main.appendChild(icon('add'));
       var label = document.createElement('span');
-      label.textContent = trigger.getAttribute('aria-label') || '';
+      label.className = 'ig-label';
       main.appendChild(label);
-      main.addEventListener('click', function () { var a = fabActions(currentFab()); if (a[0]) a[0].click(); });
+      main.addEventListener('click', function () { runAction(0); });
       box.appendChild(main);
-      if (acts[1]) {
-        var alt = document.createElement('button');
-        alt.type = 'button'; alt.className = 'ig-compose-alt';
-        alt.title = acts[1].getAttribute('aria-label') || '';
-        alt.setAttribute('aria-label', alt.title);
-        alt.appendChild(icon(iconOf(acts[1])));
-        alt.addEventListener('click', function () { var a = fabActions(currentFab()); if (a[1]) a[1].click(); });
-        box.appendChild(alt);
-      }
+      var alt = document.createElement('button');
+      alt.type = 'button'; alt.className = 'ig-compose-alt'; alt.hidden = true;
+      alt.appendChild(icon(''));
+      alt.addEventListener('click', function () { runAction(1); });
+      box.appendChild(alt);
       var head = side.querySelector(':scope > md-toolbar');
       side.insertBefore(box, head ? head.nextSibling : side.firstChild);
     }
@@ -198,7 +233,7 @@
     // 메일 폴더·주소록을 바꾸면 툴바가 새로 그려지면서 버튼도 지워지므로 다시 넣는다
     $rootScope.$on('$viewContentLoaded', function () { $timeout(ensureToggle, 0, false); });
     // 주소록처럼 폴더 권한에 따라 원래 버튼이 숨겨지는 경우를 따라간다
-    $rootScope.$on('$stateChangeSuccess', function () { $timeout(syncCompose, 50, false); });
+    $rootScope.$watch(composeState, function (now, before) { if (now !== before) syncCompose(); });
     // 창 크기가 바뀌어 좁은/넓은 화면이 바뀌면 버튼 자리를 옮긴다
     if (narrowQuery) {
       if (narrowQuery.addEventListener) narrowQuery.addEventListener('change', injectToggle);
@@ -240,6 +275,7 @@
     '  --ig-section: #f8fafc;',
     '  --ig-pop-shadow: 0 12px 40px rgba(15, 23, 42, 0.18), 0 2px 6px rgba(15, 23, 42, 0.06);',
     '  --ig-danger: #dc2626;',
+    '  --ig-on-accent: #ffffff;',
     '  --ig-radius: 20px;',
     '  --ig-radius-sm: 12px;',
     '  --ig-blur: blur(24px) saturate(160%);',
@@ -271,6 +307,7 @@
     '  --ig-section: rgba(255, 255, 255, 0.035);',
     '  --ig-pop-shadow: 0 16px 48px rgba(0, 0, 0, 0.55);',
     '  --ig-danger: #f87171;',
+    '  --ig-on-accent: #0b1120;',
     '}',
 
     /* ---------- 바탕 ---------- */
@@ -412,7 +449,7 @@
     'html.irum-glass md-input-container.md-input-focused .md-input { border-color: var(--ig-accent) !important; }',
     'html.irum-glass md-input-container label, html.irum-glass md-input-container .md-placeholder { color: var(--ig-text-2) !important; }',
     'html.irum-glass .md-button.md-primary:not(.md-raised):not(.md-fab) { color: var(--ig-accent) !important; }',
-    'html.irum-glass .md-button.md-raised.md-primary, html.irum-glass .md-button.md-raised.md-accent { background: var(--ig-accent) !important; color: #fff !important; border-radius: 10px !important; box-shadow: none !important; }',
+    'html.irum-glass .md-button.md-raised.md-primary:not([disabled]), html.irum-glass .md-button.md-raised.md-accent:not([disabled]) { background: var(--ig-accent) !important; color: var(--ig-on-accent) !important; border-radius: 10px !important; box-shadow: none !important; }',
     'html.irum-glass md-chips .md-chips { box-shadow: 0 1px 0 var(--ig-line) !important; }',
     'html.irum-glass md-chip { background: var(--ig-accent-softer) !important; color: var(--ig-text) !important; }',
 
@@ -427,20 +464,28 @@
     'html.irum-glass md-radio-button.md-checked .md-off { border-color: var(--ig-accent) !important; }',
     'html.irum-glass md-radio-button .md-on { background-color: var(--ig-accent) !important; }',
     'html.irum-glass md-checkbox.md-checked .md-icon { background-color: var(--ig-accent) !important; border-color: transparent !important; }',
-    'html.irum-glass md-checkbox.md-checked .md-icon:after { border-color: #fff !important; }',
+    'html.irum-glass md-checkbox.md-checked .md-icon:after { border-color: var(--ig-on-accent) !important; }',
     'html.irum-glass md-checkbox .md-icon { border-radius: 5px !important; }',
     'html.irum-glass md-radio-button .md-ripple, html.irum-glass md-checkbox .md-ripple { color: var(--ig-accent) !important; }',
+    /* 비활성 컨트롤: 포인트 색 대신 회색으로, 조작할 수 없어 보이게 */
+    'html.irum-glass md-checkbox[disabled], html.irum-glass md-radio-button[disabled], html.irum-glass md-radio-group[disabled] md-radio-button, html.irum-glass md-slider[disabled], html.irum-glass md-switch[disabled] { opacity: 0.55; }',
+    'html.irum-glass md-checkbox[disabled].md-checked .md-icon { background-color: var(--ig-text-3) !important; }',
+    'html.irum-glass md-radio-button[disabled] .md-on, html.irum-glass md-radio-group[disabled] md-radio-button .md-on { background-color: var(--ig-text-3) !important; }',
+    'html.irum-glass md-radio-button[disabled].md-checked .md-off, html.irum-glass md-radio-group[disabled] md-radio-button.md-checked .md-off { border-color: var(--ig-text-3) !important; }',
+    'html.irum-glass md-slider[disabled] .md-track-fill, html.irum-glass md-slider[disabled] .md-thumb:after { background-color: var(--ig-text-3) !important; border-color: var(--ig-text-3) !important; }',
+    'html.irum-glass md-switch[disabled].md-checked .md-thumb { background-color: var(--ig-text-3) !important; }',
+    'html.irum-glass .md-button.md-raised[disabled]:not(.md-fab) { background: var(--ig-hover) !important; color: var(--ig-text-3) !important; box-shadow: none !important; }',
     'html.irum-glass md-slider .md-track { background-color: var(--ig-line) !important; }',
     'html.irum-glass md-slider .md-track-fill, html.irum-glass md-slider .md-thumb:after, html.irum-glass md-slider .md-sign, html.irum-glass md-slider .md-sign:after { background-color: var(--ig-accent) !important; border-color: var(--ig-accent) !important; border-top-color: var(--ig-accent) !important; }',
     'html.irum-glass md-slider.md-min .md-thumb:after { background-color: var(--ig-popover) !important; border-color: var(--ig-text-3) !important; }',
     'html.irum-glass md-slider .md-focus-ring { background-color: var(--ig-accent-soft) !important; }',
     /* 버튼: 회색 돌출 버튼과 주황 경고 글자 */
-    'html.irum-glass .md-button.md-raised:not(.md-primary):not(.md-accent):not(.md-warn):not(.md-fab) { background: var(--ig-accent-soft) !important; color: var(--ig-accent) !important; box-shadow: none !important; border-radius: 10px !important; }',
+    'html.irum-glass .md-button.md-raised:not(.md-primary):not(.md-accent):not(.md-warn):not(.md-fab):not([disabled]) { background: var(--ig-accent-soft) !important; color: var(--ig-accent) !important; box-shadow: none !important; border-radius: 10px !important; }',
     'html.irum-glass .md-button.md-warn:not(.md-raised):not(.md-fab) { color: var(--ig-danger) !important; }',
     /* 대화상자 아래 버튼: 일반 버튼은 포인트 색 글자, 키보드 포커스·마우스 올림은 옅은 포인트 바탕 (기본은 회색) */
     'html.irum-glass md-dialog md-dialog-actions .md-button:not(.md-warn):not([disabled]):not(.md-raised) { color: var(--ig-accent) !important; }',
     'html.irum-glass .md-button:not(.md-fab):not(.md-raised):not(.md-icon-button).md-focused, html.irum-glass md-dialog md-dialog-actions .md-button:not(.md-raised):not(.md-fab):hover { background: var(--ig-accent-softer) !important; border-radius: 10px; }',
-    'html.irum-glass .md-button.md-raised.md-warn { background: var(--ig-danger) !important; color: #fff !important; box-shadow: none !important; border-radius: 10px !important; }',
+    'html.irum-glass .md-button.md-raised.md-warn:not([disabled]) { background: var(--ig-danger) !important; color: var(--ig-on-accent) !important; box-shadow: none !important; border-radius: 10px !important; }',
     /* 선택 목록 · 메뉴 */
     'html.irum-glass md-option[selected], html.irum-glass md-option[selected] * { color: var(--ig-accent) !important; }',
     'html.irum-glass md-option[selected] { background: var(--ig-accent-softer) !important; }',
@@ -469,7 +514,7 @@
     'html.irum-glass .sg-time-pane .toggleBtn { background: var(--ig-accent-soft) !important; box-shadow: none !important; border: 0 !important; }',
     'html.irum-glass .sg-time-pane .toggleBtn, html.irum-glass .sg-time-pane .toggleBtn md-icon { color: var(--ig-accent) !important; }',
     'html.irum-glass .sg-time-selection-indicator:hover, html.irum-glass .sg-time-selection-indicator.md-focus { background: var(--ig-hover) !important; }',
-    'html.irum-glass .sg-time-selection-indicator.sg-time-selected, html.irum-glass .sg-time-selection-indicator.sg-time-selected:hover, html.irum-glass .sg-time-selection-indicator.md-focus.sg-time-selected { background: var(--ig-accent) !important; color: #fff !important; }',
+    'html.irum-glass .sg-time-selection-indicator.sg-time-selected, html.irum-glass .sg-time-selection-indicator.sg-time-selected:hover, html.irum-glass .sg-time-selection-indicator.md-focus.sg-time-selected { background: var(--ig-accent) !important; color: var(--ig-on-accent) !important; }',
     'html.irum-glass .sg-timepicker-open .sg-timepicker-icon, html.irum-glass .md-datepicker-open .md-datepicker-calendar-icon { color: var(--ig-accent) !important; }',
     'html.irum-glass .md-calendar-day-header { background: transparent !important; color: var(--ig-text-3) !important; border-bottom: 1px solid var(--ig-line); }',
     'html.irum-glass .md-calendar-day-header th { color: var(--ig-text-3) !important; }',
@@ -478,7 +523,7 @@
     'html.irum-glass .md-calendar-date.md-calendar-date-disabled, html.irum-glass .md-calendar-month-label.md-calendar-month-label-disabled { color: var(--ig-text-3) !important; }',
     'html.irum-glass .md-calendar-date:not(.md-calendar-date-disabled) .md-calendar-date-selection-indicator:hover { background: var(--ig-hover) !important; }',
     'html.irum-glass .md-calendar-date.md-calendar-date-today .md-calendar-date-selection-indicator { border: 1px solid var(--ig-accent) !important; color: var(--ig-accent) !important; }',
-    'html.irum-glass .md-calendar-date.md-calendar-selected-date .md-calendar-date-selection-indicator, html.irum-glass .md-calendar-date.md-focus.md-calendar-selected-date .md-calendar-date-selection-indicator { background: var(--ig-accent) !important; color: #fff !important; border-color: transparent !important; }',
+    'html.irum-glass .md-calendar-date.md-calendar-selected-date .md-calendar-date-selection-indicator, html.irum-glass .md-calendar-date.md-focus.md-calendar-selected-date .md-calendar-date-selection-indicator { background: var(--ig-accent) !important; color: var(--ig-on-accent) !important; border-color: transparent !important; }',
     'html.irum-glass .md-calendar-date.md-focus .md-calendar-date-selection-indicator { background: var(--ig-accent-soft) !important; }',
     /* 말풍선 · 알림 */
     'html.irum-glass md-tooltip .md-content { background: #1e293b !important; color: #f8fafc !important; border-radius: 8px !important; }',
@@ -495,7 +540,8 @@
     '#' + CMP_ID + ' button { height: 48px; border-radius: 14px; cursor: pointer; display: inline-flex; align-items: center; font-family: var(--ig-font); }',
     '#' + CMP_ID + ' .ig-compose-main { flex: 1 1 auto; min-width: 0; gap: 10px; padding: 0 18px; border: 0; color: #fff; font-size: 14px; font-weight: 600;',
     '  background: linear-gradient(135deg, #3b82f6, #2563eb); box-shadow: 0 6px 18px rgba(37, 99, 235, 0.28); }',
-    '#' + CMP_ID + ' .ig-compose-main span:last-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }',
+    '#' + CMP_ID + ' .ig-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }',
+    '#' + CMP_ID + ' button[hidden] { display: none !important; }',
     '#' + CMP_ID + ' .ig-compose-main:hover { filter: brightness(1.07); }',
     '#' + CMP_ID + ' .ig-compose-alt { flex: 0 0 48px; width: 48px; justify-content: center; padding: 0; border: 1px solid var(--ig-line); background: var(--ig-glass-strong); color: var(--ig-accent); }',
     '#' + CMP_ID + ' .ig-compose-alt:hover { background: var(--ig-accent-soft); }',
