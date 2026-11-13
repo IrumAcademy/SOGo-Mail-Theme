@@ -68,6 +68,35 @@ The background gradient is `--ig-bg-grad`, glass opacity is `--ig-glass`, and th
 - Current Chrome, Edge, Safari and Firefox. Browsers without `backdrop-filter` get opaque panels.
 - Other SOGo versions may name some elements differently, so a few places may keep SOGo's default colors. Please open an issue if you find one.
 
+## Install with an AI assistant
+
+Copy the prompt below and paste it into an AI coding assistant that can run commands on your mail server (for example Claude Code or Codex).
+
+```text
+Install the "SOGo Soft Glass" theme on this server's mailcow webmail.
+
+Theme file: https://raw.githubusercontent.com/IrumAcademy/SOGo-Mail-Theme/main/soft-glass-theme.js
+Docs: https://github.com/IrumAcademy/SOGo-Mail-Theme
+
+Steps:
+1. Find the mailcow-dockerized directory (often /opt/mailcow-dockerized). It contains
+   mailcow.conf and data/conf/sogo/custom-theme.js. Ask me if you cannot find it.
+2. Back up the current theme: copy data/conf/sogo/custom-theme.js to
+   data/conf/sogo/custom-theme.js.bak-<date>. Do not overwrite an existing backup.
+3. Download the theme file above, read it to confirm it is plain JavaScript with no
+   network requests, check it with `node --check` if Node is available, then save it
+   as data/conf/sogo/custom-theme.js.
+4. Restart only these containers: docker compose restart sogo-mailcow memcached-mailcow
+   (the webmail is unavailable for about 30 seconds).
+5. Verify: wait until SOGo answers again, then fetch
+   https://<mail hostname>/SOGo.woa/WebServerResources/js/theme.js and confirm it has the
+   same checksum as the file you installed.
+6. Tell me the backup file name, the result of the check, and the one command that
+   restores the backup. Remind me to hard-reload the webmail (Ctrl+Shift+R).
+
+Do not change any other mailcow file or container.
+```
+
 ## License
 
 [MIT](LICENSE) © 2026 IrumAcademy

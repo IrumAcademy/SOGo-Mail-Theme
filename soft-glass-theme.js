@@ -73,12 +73,19 @@
     (document.head || document.documentElement).appendChild(s);
   }
 
-  // 상단 툴바 오른쪽 아이콘 묶음(캘린더·주소록·메일…) 맨 앞에 넣는다. 툴바가 없으면 화면 오른쪽 아래에 띄운다
+  // 좁은 화면에서는 상단 툴바가 이미 꽉 차서, 버튼을 넣으면 툴바가 넘치고 페이지가 스크롤된다
+  var narrowQuery = window.matchMedia ? window.matchMedia('(max-width: 599px)') : null;
+  function isNarrow() { return !!(narrowQuery && narrowQuery.matches); }
+
+  // 넓은 화면: 상단 툴바 오른쪽 아이콘 묶음(캘린더·주소록·메일…) 맨 앞.
+  // 좁은 화면이거나 툴바가 없으면: 화면 왼쪽 아래에 띄운다 (새 메일 버튼은 오른쪽 아래)
+  // 반환값: 자리를 확정했으면 true (툴바를 아직 못 찾았으면 false → 재시도)
   function injectToggle() {
     if (!document.body) return false;
-    var group = document.querySelector('md-toolbar.toolbar-main .sg-toolbar-group-last');
+    var narrow = isNarrow();
+    var group = narrow ? null : document.querySelector('md-toolbar.toolbar-main .sg-toolbar-group-last');
     var b = document.getElementById(BTN_ID);
-    if (b && (b.parentNode === group || (!group && b.parentNode === document.body))) return !!group;
+    if (b && (b.parentNode === group || (!group && b.parentNode === document.body))) return !!group || narrow;
     if (!b) {
       b = document.createElement('button');
       b.id = BTN_ID;
@@ -92,18 +99,31 @@
     if (group) { group.insertBefore(b, group.firstChild); b.classList.remove('ig-floating'); }
     else { document.body.appendChild(b); b.classList.add('ig-floating'); }
     applyMode();
-    return !!group;
+    return !!group || narrow;
   }
 
-  start.$inject = ['$timeout'];
-  function start($timeout) {
+  start.$inject = ['$timeout', '$rootScope'];
+  function start($timeout, $rootScope) {
     injectStyle();
     applyMode();
     // 툴바는 Angular 가 그린 뒤에 생기므로 잠시 재시도
-    var tries = 0;
-    (function retry() {
-      if (!injectToggle() && ++tries < 20) $timeout(retry, 300, false);
-    })();
+    var pending = null;
+    function ensureToggle() {
+      if (pending) $timeout.cancel(pending);
+      var tries = 0;
+      (function retry() {
+        pending = null;
+        if (!injectToggle() && ++tries < 20) pending = $timeout(retry, 300, false);
+      })();
+    }
+    ensureToggle();
+    // 메일 폴더·주소록을 바꾸면 툴바가 새로 그려지면서 버튼도 지워지므로 다시 넣는다
+    $rootScope.$on('$viewContentLoaded', function () { $timeout(ensureToggle, 0, false); });
+    // 창 크기가 바뀌어 좁은/넓은 화면이 바뀌면 버튼 자리를 옮긴다
+    if (narrowQuery) {
+      if (narrowQuery.addEventListener) narrowQuery.addEventListener('change', injectToggle);
+      else if (narrowQuery.addListener) narrowQuery.addListener(injectToggle);
+    }
     window.addEventListener('storage', function (e) { if (!e.key || e.key === STORAGE_KEY) applyMode(); });
     try {
       var mq = window.matchMedia('(prefers-color-scheme: dark)');
@@ -179,7 +199,7 @@
     'html.irum-glass md-sidenav, html.irum-glass md-card, html.irum-glass md-dialog, html.irum-glass .view-list, html.irum-glass .view-detail { color: var(--ig-text) !important; }',
     'html.irum-glass .md-subheader, html.irum-glass .md-subheader .md-subheader-content, html.irum-glass .sg-md-caption { color: var(--ig-text-3) !important; }',
     'html.irum-glass md-sidenav md-content md-list-item p, html.irum-glass md-sidenav md-content md-list-item .md-list-item-text { color: var(--ig-text) !important; }',
-    'html.irum-glass md-icon:not(.md-fg):not([style*="color"]) { color: inherit; }',
+    'html.irum-glass md-icon:not(.md-fg):not(.md-warn):not(.md-primary):not(.md-accent):not([style*="color"]) { color: inherit; }',
 
     /* 휴대폰·좁은 화면에서는 메일 보기 화면이 목록 위에 겹쳐 뜬다.
        바탕과 똑같은 그라데이션(화면 고정)을 깔아 데스크톱에서는 티가 안 나고, 겹칠 때는 뒤를 가린다 */
@@ -199,9 +219,15 @@
     '  overflow: hidden;',
     '}',
     'html.irum-glass .view-list .view-list { background: transparent !important; -webkit-backdrop-filter: none; backdrop-filter: none; border: 0 !important; box-shadow: none !important; border-radius: 0 !important; margin: 0 !important; }',
-    'html.irum-glass md-sidenav.md-sidenav-left { margin: 10px 0 10px 10px !important; height: calc(100% - 20px) !important; }',
+    /* layout-fill 의 min-height: 100% 를 풀지 않으면 위 여백만큼 페이지가 넘쳐 스크롤된다 */
+    /* .sg-close: SOGo 가 사이드바를 접을 때(전체 화면 버튼) 음수 margin 으로 자리를 없애므로 그때는 여백을 주지 않는다 */
+    'html.irum-glass md-sidenav.md-sidenav-left:not(.sg-close) { margin: 10px 0 10px 10px !important; }',
+    'html.irum-glass md-sidenav.md-sidenav-left { height: calc(100% - 20px) !important; min-height: 0 !important; }',
     'html.irum-glass md-sidenav.md-sidenav-left.md-closed:not(.md-locked-open) { margin: 0 !important; }',
-    'html.irum-glass .view-list { margin: 0 6px 10px 10px !important; }',
+    /* .view-list--close: SOGo 가 목록을 접을 때 음수 margin-right 를 쓰므로 그때는 건드리지 않는다 */
+    'html.irum-glass .view-list:not(.view-list--close) { margin: 0 6px 10px 10px !important; }',
+    /* 좁은 화면에서는 SOGo 가 목록에 min-width: 100% 를 건다. 여백만큼 크기를 줄여야 페이지가 넘치지 않는다 */
+    '@media (max-width: 959px) { html.irum-glass .view-list:not(.view-list--close) { margin: 0 8px 8px !important; min-width: 0 !important; max-width: calc(100% - 16px) !important; max-height: calc(100% - 8px) !important; } }',
     'html.irum-glass .view-detail { padding: 0 10px 10px 4px !important; }',
     'html.irum-glass .view-detail md-card { margin: 0 !important; }',
     'html.irum-glass .md-whiteframe-z1, html.irum-glass .md-whiteframe-1dp, html.irum-glass .md-whiteframe-z2 { box-shadow: none !important; }',
@@ -270,6 +296,9 @@
     'html.irum-glass .view-detail md-whiteframe { margin: 8px 12px 14px !important; border: 1px solid var(--ig-line) !important; overflow: hidden; }',
     'html.irum-glass .view-detail .msg-body { padding: 4px 8px; }',
     'html.irum-glass .view-detail .msg-body a:not([style*="color"]) { color: #1d4ed8; }',
+    /* 흰 종이(.msg-body) 안의 카드(첨부, 일정 초대)와 목록(연락처 그룹 구성원)은 종이 색 그대로 */
+    'html.irum-glass .view-detail .msg-body md-card { background: #ffffff !important; color: #111827 !important; -webkit-backdrop-filter: none; backdrop-filter: none; border: 1px solid #e5e7eb !important; box-shadow: none !important; margin: 8px !important; border-radius: 12px !important; }',
+    'html.irum-glass .view-detail .msg-body md-list-item, html.irum-glass .view-detail .msg-body md-list-item *, html.irum-glass .view-detail .msg-body md-card * { color: #111827 !important; }',
 
     /* ---------- 새 메일 버튼 (FAB) ---------- */
     'html.irum-glass .md-fab.md-accent, html.irum-glass .md-fab.md-button.md-accent { background: linear-gradient(135deg, #3b82f6, #2563eb) !important; color: #fff !important; border-radius: 18px !important; box-shadow: 0 8px 24px rgba(37, 99, 235, 0.35) !important; }',
@@ -291,7 +320,7 @@
     'html.irum-glass md-menu-item md-icon, html.irum-glass md-option md-icon { color: var(--ig-text-2) !important; }',
     'html.irum-glass md-input-container .md-input { color: var(--ig-text) !important; border-color: var(--ig-line) !important; }',
     'html.irum-glass md-input-container.md-input-focused .md-input { border-color: var(--ig-accent) !important; }',
-    'html.irum-glass md-input-container label, html.irum-glass md-input-container .md-placeholder { color: var(--ig-text-3) !important; }',
+    'html.irum-glass md-input-container label, html.irum-glass md-input-container .md-placeholder { color: var(--ig-text-2) !important; }',
     'html.irum-glass .md-button.md-primary:not(.md-raised):not(.md-fab) { color: var(--ig-accent) !important; }',
     'html.irum-glass .md-button.md-raised.md-primary, html.irum-glass .md-button.md-raised.md-accent { background: var(--ig-accent) !important; color: #fff !important; border-radius: 10px !important; box-shadow: none !important; }',
     'html.irum-glass md-chips .md-chips { box-shadow: 0 1px 0 var(--ig-line) !important; }',
@@ -305,7 +334,7 @@
     'html.irum-glass md-autocomplete md-autocomplete-wrap { background: transparent !important; box-shadow: none !important; }',
     'html.irum-glass md-autocomplete input, html.irum-glass md-chips input, html.irum-glass md-autocomplete input:not(.md-input) { color: var(--ig-text) !important; background: transparent !important; }',
     'html.irum-glass input::placeholder, html.irum-glass textarea::placeholder { color: var(--ig-text-3) !important; opacity: 1; }',
-    'html.irum-glass .pseudo-input-label, html.irum-glass md-dialog label { color: var(--ig-text-3) !important; }',
+    'html.irum-glass .pseudo-input-label, html.irum-glass md-dialog label { color: var(--ig-text-2) !important; }',
     'html.irum-glass md-dialog.sg-mail-editor .pseudo-input-container { border-color: var(--ig-line) !important; }',
     'html.irum-glass md-dialog md-icon, html.irum-glass md-dialog .sg-icon-button { color: var(--ig-icon) !important; }',
     'html.irum-glass .md-chips { box-shadow: 0 1px 0 var(--ig-line) !important; }',
@@ -327,6 +356,8 @@
 
     /* ---------- 목록 공통 (사이드바 계정 줄 등) ---------- */
     'html.irum-glass md-list-item .md-no-style.md-button, html.irum-glass md-list-item .md-no-style.md-button:focus { background-color: transparent !important; }',
+    /* 키보드 포커스 (Angular Material 은 .md-proxy-focus.md-focused 의 배경으로 표시한다) */
+    'html.irum-glass md-list-item.md-proxy-focus.md-focused .md-no-style, html.irum-glass md-list-item.md-proxy-focus.md-focused { background-color: var(--ig-accent-soft) !important; box-shadow: inset 0 0 0 2px var(--ig-accent-ring) !important; }',
     'html.irum-glass .sg-account-section > md-list md-list-item:hover { background-color: var(--ig-hover) !important; border-radius: var(--ig-radius-sm); }',
 
     /* ---------- 탭 ---------- */
@@ -375,7 +406,7 @@
     '  color: var(--ig-icon); cursor: pointer; display: inline-flex; align-items: center; justify-content: center; flex: 0 0 auto; }',
     '#' + BTN_ID + ':hover { background: var(--ig-hover); color: var(--ig-accent); }',
     '#' + BTN_ID + ':focus-visible { outline: 2px solid var(--ig-accent); outline-offset: 2px; }',
-    '#' + BTN_ID + '.ig-floating { position: fixed; right: 20px; bottom: 20px; z-index: 70; border: 1px solid var(--ig-glass-border);',
+    '#' + BTN_ID + '.ig-floating { position: fixed; left: 16px; bottom: 16px; margin: 0; z-index: 58; border: 1px solid var(--ig-glass-border);',
     '  background: var(--ig-glass-strong); -webkit-backdrop-filter: var(--ig-blur); backdrop-filter: var(--ig-blur); box-shadow: var(--ig-shadow); }',
     '@media print { #' + BTN_ID + ' { display: none !important; } }',
 

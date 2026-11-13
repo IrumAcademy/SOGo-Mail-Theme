@@ -68,6 +68,34 @@ docker compose restart sogo-mailcow memcached-mailcow
 - 최신 Chrome, Edge, Safari, Firefox. `backdrop-filter`가 없는 브라우저는 불투명 패널로 대체합니다.
 - 다른 버전의 SOGo에서는 일부 요소 이름이 달라 SOGo 기본 색이 남는 곳이 있을 수 있습니다. 발견하시면 이슈로 알려 주세요.
 
+## AI 도우미로 설치하기
+
+아래 프롬프트를 복사해서, 메일 서버에서 명령을 실행할 수 있는 AI 코딩 도우미(Claude Code, Codex 등)에 붙여 넣으세요.
+
+```text
+이 서버의 mailcow 웹메일에 "SOGo Soft Glass" 테마를 설치해 줘.
+
+테마 파일: https://raw.githubusercontent.com/IrumAcademy/SOGo-Mail-Theme/main/soft-glass-theme.js
+설명서: https://github.com/IrumAcademy/SOGo-Mail-Theme
+
+순서:
+1. mailcow-dockerized 폴더를 찾아. 보통 /opt/mailcow-dockerized 이고, 안에 mailcow.conf 와
+   data/conf/sogo/custom-theme.js 가 있어. 찾지 못하면 나에게 물어봐.
+2. 지금 테마를 백업해. data/conf/sogo/custom-theme.js 를
+   data/conf/sogo/custom-theme.js.bak-<날짜> 로 복사하고, 이미 있는 백업은 덮어쓰지 마.
+3. 위 테마 파일을 내려받아서 네트워크 요청이 없는 일반 JavaScript 인지 읽어서 확인하고,
+   Node 가 있으면 `node --check` 로 문법을 검사한 뒤 data/conf/sogo/custom-theme.js 로 저장해.
+4. 이 컨테이너들만 재시작해: docker compose restart sogo-mailcow memcached-mailcow
+   (웹메일이 30초 정도 끊겨.)
+5. 확인: SOGo 가 다시 응답할 때까지 기다린 뒤
+   https://<메일 주소>/SOGo.woa/WebServerResources/js/theme.js 를 받아서
+   설치한 파일과 체크섬이 같은지 확인해.
+6. 백업 파일 이름, 확인 결과, 백업으로 되돌리는 명령 한 줄을 알려 주고,
+   웹메일을 강력 새로고침(Ctrl+Shift+R)하라고 안내해 줘.
+
+mailcow 의 다른 파일이나 컨테이너는 건드리지 마.
+```
+
 ## 라이선스
 
 [MIT](LICENSE) © 2026 IrumAcademy
