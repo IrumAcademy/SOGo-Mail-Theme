@@ -6,17 +6,21 @@ A soft-glass theme for the [SOGo](https://www.sogo.nu/) webmail (mail, calendar 
 Frosted translucent panels float over a subtle gradient, and a single calm blue is used as the accent.
 On [mailcow](https://mailcow.email/) it installs by replacing one file.
 
-![Mail (light)](screenshots/mail-light.png)
+## Screenshots
 
-| Dark mode | Compose |
+**Mail — light mode**
+
+![Mail, light mode](screenshots/en/mail-light.png)
+
+| **Mail — dark mode** | **Compose** |
 |---|---|
-| ![Mail (dark)](screenshots/mail-dark.png) | ![Compose](screenshots/compose.png) |
-| ![Calendar (light)](screenshots/calendar-light.png) | ![Calendar (dark)](screenshots/calendar-dark.png) |
+| ![Mail, dark mode](screenshots/en/mail-dark.png) | ![Compose](screenshots/en/compose.png) |
+| **Calendar — light mode** | **Calendar — dark mode** |
+| ![Calendar, light mode](screenshots/en/calendar-light.png) | ![Calendar, dark mode](screenshots/en/calendar-dark.png) |
+| **Contacts** | **Mobile — inbox and message** |
+| ![Contacts](screenshots/en/contacts.png) | <img src="screenshots/en/mobile-inbox.png" width="170" alt="Mobile inbox"> <img src="screenshots/en/mobile-mail.png" width="170" alt="Mobile message view"> |
 
-<p>
-  <img src="screenshots/mobile-inbox.png" width="220" alt="Mobile inbox">
-  <img src="screenshots/mobile-mail.png" width="220" alt="Mobile message view">
-</p>
+The sample messages, names and events in these screenshots are fictional.
 
 ## Features
 

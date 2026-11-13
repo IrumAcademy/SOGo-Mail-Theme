@@ -6,17 +6,21 @@
 은은한 그라데이션 바탕 위에 반투명 유리 패널을 띄우고, 포인트 색은 차분한 블루 하나만 씁니다.
 [mailcow](https://mailcow.email/)에서는 파일 하나만 바꾸면 적용됩니다.
 
-![메일 (라이트)](screenshots/mail-light.png)
+## 스크린샷
 
-| 다크 모드 | 메일 쓰기 |
+**메일 — 라이트 모드**
+
+![메일, 라이트 모드](screenshots/ko/mail-light.png)
+
+| **메일 — 다크 모드** | **메일 쓰기** |
 |---|---|
-| ![메일 (다크)](screenshots/mail-dark.png) | ![메일 쓰기](screenshots/compose.png) |
-| ![캘린더 (라이트)](screenshots/calendar-light.png) | ![캘린더 (다크)](screenshots/calendar-dark.png) |
+| ![메일, 다크 모드](screenshots/ko/mail-dark.png) | ![메일 쓰기](screenshots/ko/compose.png) |
+| **캘린더 — 라이트 모드** | **캘린더 — 다크 모드** |
+| ![캘린더, 라이트 모드](screenshots/ko/calendar-light.png) | ![캘린더, 다크 모드](screenshots/ko/calendar-dark.png) |
+| **주소록** | **휴대폰 — 메일 목록과 메일 보기** |
+| ![주소록](screenshots/ko/contacts.png) | <img src="screenshots/ko/mobile-inbox.png" width="170" alt="휴대폰 메일 목록"> <img src="screenshots/ko/mobile-mail.png" width="170" alt="휴대폰 메일 보기"> |
 
-<p>
-  <img src="screenshots/mobile-inbox.png" width="220" alt="휴대폰 메일 목록">
-  <img src="screenshots/mobile-mail.png" width="220" alt="휴대폰 메일 보기">
-</p>
+스크린샷의 샘플 메일, 이름, 일정은 모두 가상의 내용입니다.
 
 ## 특징
 
