@@ -384,6 +384,12 @@
     'html.irum-glass [ui-view="calendars"] .allDaysView, html.irum-glass [ui-view="calendars"] .allDaysView--sidenav { border-bottom-color: var(--ig-line) !important; }',
     'html.irum-glass .md-datepicker-input, html.irum-glass input.md-input, html.irum-glass md-select .md-select-value { color: var(--ig-text) !important; }',
     'html.irum-glass .md-datepicker-input-container { border-color: var(--ig-line) !important; }',
+    /* 일정 목록: SOGo 의 날짜 칸은 72px 라 "14 토요일"처럼 긴 요일이 일정 카드 아래로 넘친다.
+       한국어 요일까지 들어가는 고정 폭으로 넓혀서, 언어와 요일에 상관없이 카드가 일렬로 정렬되게 한다 */
+    'html.irum-glass .sg-calendar-date { width: 104px !important; min-width: 104px !important; max-width: none !important; flex: 0 0 104px !important; padding-right: 8px; box-sizing: border-box; overflow: hidden; }',
+    'html.irum-glass .sg-calendar-date .sg-calendar-day { color: var(--ig-accent) !important; }',
+    'html.irum-glass .sg-calendar-date .md-caption { color: var(--ig-text-2) !important; }',
+    'html.irum-glass .sg-event { border-radius: 8px !important; }',
     'html.irum-glass md-switch.md-checked .md-bar { background-color: var(--ig-accent-soft) !important; }',
     'html.irum-glass md-switch.md-checked .md-thumb { background-color: var(--ig-accent) !important; }',
 
