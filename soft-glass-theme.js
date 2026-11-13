@@ -26,6 +26,7 @@
   var STORAGE_KEY = 'sogo_theme';
   var STYLE_ID = 'irum-glass-theme';
   var BTN_ID = 'irum-theme-toggle';
+  var CMP_ID = 'irum-side-compose';
 
   angular.module('SOGo.Common').config(configure).run(start);
 
@@ -102,6 +103,70 @@
     return !!group || narrow;
   }
 
+  // 넓은 화면(사이드바가 고정으로 열려 있을 때): 메일 쓰기 / 새 이벤트 / 새 연락처 버튼을
+  // 사이드바 맨 위에 둔다. SOGo 의 원래 버튼(목록 아래 둥근 버튼)을 그대로 눌러 주는 대리 버튼이라
+  // SOGo 의 동작과 권한 처리는 바뀌지 않는다. 원래 버튼은 CSS 로 넓은 화면에서만 숨긴다.
+  function currentFab() {
+    return document.querySelector('md-fab-speed-dial.sg-fab-bottom-center, .md-fab.sg-fab-bottom-center');
+  }
+  function fabActions(fab) {
+    if (!fab) return [];
+    if (fab.tagName.toLowerCase() !== 'md-fab-speed-dial') return [fab];   // 메일: 새 창 쓰기만 켠 경우 단일 버튼
+    return Array.prototype.slice.call(fab.querySelectorAll('md-fab-actions button'));
+  }
+  function iconOf(el) {
+    var i = el && el.querySelector('md-icon');
+    return i ? i.textContent.trim() : '';
+  }
+  function icon(name) {
+    var s = document.createElement('span');
+    s.className = 'material-icons'; s.setAttribute('aria-hidden', 'true'); s.textContent = name;
+    return s;
+  }
+  function syncCompose() {
+    var box = document.getElementById(CMP_ID);
+    if (!box) return;
+    var fab = currentFab();
+    var hidden = !fab || fab.classList.contains('ng-hide');
+    box.classList.toggle('ig-hidden', hidden);
+    document.documentElement.classList.toggle('ig-has-side-compose', !hidden);
+  }
+  function injectCompose() {
+    var side = document.querySelector('md-sidenav.md-sidenav-left');
+    var fab = currentFab();
+    if (!side || !fab) return false;
+    var acts = fabActions(fab);
+    if (!acts.length) return false;
+    var box = document.getElementById(CMP_ID);
+    if (!box || box.parentNode !== side) {
+      if (box) box.parentNode.removeChild(box);
+      box = document.createElement('div');
+      box.id = CMP_ID;
+      var trigger = fab.querySelector('md-fab-trigger button') || acts[0];
+      var main = document.createElement('button');
+      main.type = 'button'; main.className = 'ig-compose-main';
+      main.appendChild(icon(iconOf(trigger) || 'add'));
+      var label = document.createElement('span');
+      label.textContent = trigger.getAttribute('aria-label') || '';
+      main.appendChild(label);
+      main.addEventListener('click', function () { var a = fabActions(currentFab()); if (a[0]) a[0].click(); });
+      box.appendChild(main);
+      if (acts[1]) {
+        var alt = document.createElement('button');
+        alt.type = 'button'; alt.className = 'ig-compose-alt';
+        alt.title = acts[1].getAttribute('aria-label') || '';
+        alt.setAttribute('aria-label', alt.title);
+        alt.appendChild(icon(iconOf(acts[1])));
+        alt.addEventListener('click', function () { var a = fabActions(currentFab()); if (a[1]) a[1].click(); });
+        box.appendChild(alt);
+      }
+      var head = side.querySelector(':scope > md-toolbar');
+      side.insertBefore(box, head ? head.nextSibling : side.firstChild);
+    }
+    syncCompose();
+    return true;
+  }
+
   start.$inject = ['$timeout', '$rootScope'];
   function start($timeout, $rootScope) {
     injectStyle();
@@ -113,12 +178,16 @@
       var tries = 0;
       (function retry() {
         pending = null;
-        if (!injectToggle() && ++tries < 20) pending = $timeout(retry, 300, false);
+        var ok = injectToggle();
+        ok = injectCompose() && ok;
+        if (!ok && ++tries < 20) pending = $timeout(retry, 300, false);
       })();
     }
     ensureToggle();
     // 메일 폴더·주소록을 바꾸면 툴바가 새로 그려지면서 버튼도 지워지므로 다시 넣는다
     $rootScope.$on('$viewContentLoaded', function () { $timeout(ensureToggle, 0, false); });
+    // 주소록처럼 폴더 권한에 따라 원래 버튼이 숨겨지는 경우를 따라간다
+    $rootScope.$on('$stateChangeSuccess', function () { $timeout(syncCompose, 50, false); });
     // 창 크기가 바뀌어 좁은/넓은 화면이 바뀌면 버튼 자리를 옮긴다
     if (narrowQuery) {
       if (narrowQuery.addEventListener) narrowQuery.addEventListener('change', injectToggle);
@@ -155,6 +224,11 @@
     '  --ig-star: #f59e0b;',
     '  --ig-star-soft: rgba(245, 158, 11, 0.10);',
     '  --ig-shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 8px 32px rgba(15, 23, 42, 0.08);',
+    '  --ig-popover: #ffffff;',
+    '  --ig-popover-solid: #ffffff;',
+    '  --ig-section: #f8fafc;',
+    '  --ig-pop-shadow: 0 12px 40px rgba(15, 23, 42, 0.18), 0 2px 6px rgba(15, 23, 42, 0.06);',
+    '  --ig-danger: #dc2626;',
     '  --ig-radius: 20px;',
     '  --ig-radius-sm: 12px;',
     '  --ig-blur: blur(24px) saturate(160%);',
@@ -181,6 +255,11 @@
     '  --ig-star: #fbbf24;',
     '  --ig-star-soft: rgba(251, 191, 36, 0.10);',
     '  --ig-shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 8px 32px rgba(0, 0, 0, 0.35);',
+    '  --ig-popover: #131b2d;',
+    '  --ig-popover-solid: #131b2d;',
+    '  --ig-section: rgba(255, 255, 255, 0.035);',
+    '  --ig-pop-shadow: 0 16px 48px rgba(0, 0, 0, 0.55);',
+    '  --ig-danger: #f87171;',
     '}',
 
     /* ---------- 바탕 ---------- */
@@ -308,9 +387,9 @@
 
     /* ---------- 대화상자 · 메뉴 · 입력 ---------- */
     'html.irum-glass md-dialog, html.irum-glass md-menu-content, html.irum-glass md-select-menu, html.irum-glass md-select-menu md-content, html.irum-glass .md-open-menu-container {',
-    '  background: var(--ig-glass-strong) !important; color: var(--ig-text) !important;',
-    '  -webkit-backdrop-filter: var(--ig-blur); backdrop-filter: var(--ig-blur);',
-    '  border-radius: 16px !important; border: 1px solid var(--ig-glass-border);',
+    '  background: var(--ig-popover) !important; color: var(--ig-text) !important;',
+    '  -webkit-backdrop-filter: none; backdrop-filter: none;',
+    '  border-radius: 16px !important; border: 1px solid var(--ig-line); box-shadow: var(--ig-pop-shadow) !important;',
     '}',
     'html.irum-glass md-dialog { border-radius: var(--ig-radius) !important; box-shadow: 0 24px 64px rgba(15, 23, 42, 0.25) !important; }',
     'html.irum-glass md-dialog md-toolbar { border-bottom: 1px solid var(--ig-line); }',
@@ -325,6 +404,93 @@
     'html.irum-glass .md-button.md-raised.md-primary, html.irum-glass .md-button.md-raised.md-accent { background: var(--ig-accent) !important; color: #fff !important; border-radius: 10px !important; box-shadow: none !important; }',
     'html.irum-glass md-chips .md-chips { box-shadow: 0 1px 0 var(--ig-line) !important; }',
     'html.irum-glass md-chip { background: var(--ig-accent-softer) !important; color: var(--ig-text) !important; }',
+
+    /* ---------- 팝오버 · 대화상자 안쪽 ---------- */
+    /* 대화상자 제목줄의 큰 배경 아이콘(SOGo 장식)이 버튼과 겹친다 */
+    'html.irum-glass md-dialog .sg-icon-toolbar-bg { display: none !important; }',
+    /* 일정 편집 등의 구역: 두꺼운 회색 그림자 대신 옅은 바탕과 선 */
+    'html.irum-glass md-dialog .sg-form-section { background: var(--ig-section) !important; box-shadow: none !important; border: 1px solid var(--ig-line); border-radius: 14px; margin: 12px 16px !important; }',
+    'html.irum-glass md-dialog md-dialog-actions { border-top: 1px solid var(--ig-line); }',
+    /* 라디오 · 체크박스 · 슬라이더: SOGo 기본 초록 대신 포인트 색 */
+    'html.irum-glass md-radio-button .md-off, html.irum-glass md-checkbox:not(.md-checked) .md-icon { border-color: var(--ig-text-3) !important; }',
+    'html.irum-glass md-radio-button.md-checked .md-off { border-color: var(--ig-accent) !important; }',
+    'html.irum-glass md-radio-button .md-on { background-color: var(--ig-accent) !important; }',
+    'html.irum-glass md-checkbox.md-checked .md-icon { background-color: var(--ig-accent) !important; border-color: transparent !important; }',
+    'html.irum-glass md-checkbox.md-checked .md-icon:after { border-color: #fff !important; }',
+    'html.irum-glass md-checkbox .md-icon { border-radius: 5px !important; }',
+    'html.irum-glass md-radio-button .md-ripple, html.irum-glass md-checkbox .md-ripple { color: var(--ig-accent) !important; }',
+    'html.irum-glass md-slider .md-track { background-color: var(--ig-line) !important; }',
+    'html.irum-glass md-slider .md-track-fill, html.irum-glass md-slider .md-thumb:after, html.irum-glass md-slider .md-sign, html.irum-glass md-slider .md-sign:after { background-color: var(--ig-accent) !important; border-color: var(--ig-accent) !important; border-top-color: var(--ig-accent) !important; }',
+    'html.irum-glass md-slider.md-min .md-thumb:after { background-color: var(--ig-popover) !important; border-color: var(--ig-text-3) !important; }',
+    'html.irum-glass md-slider .md-focus-ring { background-color: var(--ig-accent-soft) !important; }',
+    /* 버튼: 회색 돌출 버튼과 주황 경고 글자 */
+    'html.irum-glass .md-button.md-raised:not(.md-primary):not(.md-accent):not(.md-warn):not(.md-fab) { background: var(--ig-accent-soft) !important; color: var(--ig-accent) !important; box-shadow: none !important; border-radius: 10px !important; }',
+    'html.irum-glass .md-button.md-warn:not(.md-raised):not(.md-fab) { color: var(--ig-danger) !important; }',
+    /* 대화상자 아래 버튼: 일반 버튼은 포인트 색 글자, 키보드 포커스·마우스 올림은 옅은 포인트 바탕 (기본은 회색) */
+    'html.irum-glass md-dialog md-dialog-actions .md-button:not(.md-warn):not([disabled]):not(.md-raised) { color: var(--ig-accent) !important; }',
+    'html.irum-glass .md-button:not(.md-fab):not(.md-raised):not(.md-icon-button).md-focused, html.irum-glass md-dialog md-dialog-actions .md-button:not(.md-raised):not(.md-fab):hover { background: var(--ig-accent-softer) !important; border-radius: 10px; }',
+    'html.irum-glass .md-button.md-raised.md-warn { background: var(--ig-danger) !important; color: #fff !important; box-shadow: none !important; border-radius: 10px !important; }',
+    /* 선택 목록 · 메뉴 */
+    'html.irum-glass md-option[selected], html.irum-glass md-option[selected] * { color: var(--ig-accent) !important; }',
+    'html.irum-glass md-option[selected] { background: var(--ig-accent-softer) !important; }',
+    'html.irum-glass md-select-menu md-content { border: 0 !important; box-shadow: none !important; }',
+    'html.irum-glass md-menu-divider { background-color: var(--ig-line) !important; }',
+    /* 주소 자동완성 목록 */
+    'html.irum-glass .md-autocomplete-suggestions-container, html.irum-glass .md-virtual-repeat-container.md-autocomplete-suggestions-container { background: var(--ig-popover) !important; border: 1px solid var(--ig-line); border-radius: 12px !important; box-shadow: var(--ig-pop-shadow) !important; overflow: hidden; }',
+    'html.irum-glass .md-autocomplete-suggestions li { color: var(--ig-text) !important; }',
+    'html.irum-glass .md-autocomplete-suggestions li:hover, html.irum-glass .md-autocomplete-suggestions li.selected { background: var(--ig-hover) !important; }',
+    /* 날짜 선택 달력 */
+    'html.irum-glass .md-datepicker-calendar-pane { background: var(--ig-popover) !important; border: 1px solid var(--ig-line) !important; border-radius: 14px !important; box-shadow: var(--ig-pop-shadow) !important; overflow: hidden; }',
+    /* 달력 판은 불투명하게 (뒤의 입력칸 글자가 비치지 않게). 입력칸 둘레 가림막도 같은 색 */
+    'html.irum-glass .md-datepicker-calendar, html.irum-glass .sg-timepicker-time, html.irum-glass .sg-timepicker-open .sg-timepicker-input-container, html.irum-glass .md-datepicker-open .md-datepicker-input-container { background: var(--ig-popover-solid) !important; color: var(--ig-text) !important; }',
+    'html.irum-glass .md-calendar, html.irum-glass .md-calendar-scroll-container { background: transparent !important; color: var(--ig-text) !important; }',
+    'html.irum-glass .md-datepicker-input-mask-opaque, html.irum-glass .sg-timepicker-input-mask-opaque { box-shadow: 0 0 0 9999px var(--ig-popover-solid) !important; }',
+    /* 시간 선택 */
+    'html.irum-glass .sg-timepicker-time-pane { border: 1px solid var(--ig-line) !important; border-radius: 14px !important; box-shadow: var(--ig-pop-shadow) !important; overflow: hidden; }',
+    'html.irum-glass .sg-time-scroll-mask { height: auto !important; max-height: 240px; background: transparent !important; }',
+    'html.irum-glass .sg-time-selection-indicator { color: var(--ig-text) !important; }',
+    'html.irum-glass .sg-timepicker-input { color: var(--ig-text) !important; }',
+    'html.irum-glass .sg-timepicker-input-container, html.irum-glass .md-datepicker-input-container { border-bottom-color: var(--ig-line) !important; }',
+    'html.irum-glass .sg-timepicker-focused .sg-timepicker-input-container, html.irum-glass .md-datepicker-focused.md-datepicker-input-container, html.irum-glass .md-datepicker-input-container.md-datepicker-focused { border-bottom-color: var(--ig-accent) !important; }',
+    'html.irum-glass .md-calendar td, html.irum-glass .md-calendar tr:last-child td, html.irum-glass .md-calendar-day-header, html.irum-glass .md-calendar-day-header th { border-color: var(--ig-line) !important; box-shadow: none !important; }',
+    /* 아래쪽 5분/1분 단위 전환 막대: 회색 바탕 → 선 하나, 버튼 아이콘이 흰 바탕에 흰색이라 안 보이던 것 */
+    'html.irum-glass .sg-time-pane > .layout-row.flex, html.irum-glass .sg-time-pane > div:has(> .toggleBtn) { background: transparent !important; border-top: 1px solid var(--ig-line); }',
+    'html.irum-glass .sg-time-pane .toggleBtn { background: var(--ig-accent-soft) !important; box-shadow: none !important; border: 0 !important; }',
+    'html.irum-glass .sg-time-pane .toggleBtn, html.irum-glass .sg-time-pane .toggleBtn md-icon { color: var(--ig-accent) !important; }',
+    'html.irum-glass .sg-time-selection-indicator:hover, html.irum-glass .sg-time-selection-indicator.md-focus { background: var(--ig-hover) !important; }',
+    'html.irum-glass .sg-time-selection-indicator.sg-time-selected, html.irum-glass .sg-time-selection-indicator.sg-time-selected:hover, html.irum-glass .sg-time-selection-indicator.md-focus.sg-time-selected { background: var(--ig-accent) !important; color: #fff !important; }',
+    'html.irum-glass .sg-timepicker-open .sg-timepicker-icon, html.irum-glass .md-datepicker-open .md-datepicker-calendar-icon { color: var(--ig-accent) !important; }',
+    'html.irum-glass .md-calendar-day-header { background: transparent !important; color: var(--ig-text-3) !important; border-bottom: 1px solid var(--ig-line); }',
+    'html.irum-glass .md-calendar-day-header th { color: var(--ig-text-3) !important; }',
+    'html.irum-glass .md-calendar-month-label { color: var(--ig-text-2) !important; font-weight: 600; }',
+    'html.irum-glass .md-calendar-date { color: var(--ig-text) !important; }',
+    'html.irum-glass .md-calendar-date.md-calendar-date-disabled, html.irum-glass .md-calendar-month-label.md-calendar-month-label-disabled { color: var(--ig-text-3) !important; }',
+    'html.irum-glass .md-calendar-date:not(.md-calendar-date-disabled) .md-calendar-date-selection-indicator:hover { background: var(--ig-hover) !important; }',
+    'html.irum-glass .md-calendar-date.md-calendar-date-today .md-calendar-date-selection-indicator { border: 1px solid var(--ig-accent) !important; color: var(--ig-accent) !important; }',
+    'html.irum-glass .md-calendar-date.md-calendar-selected-date .md-calendar-date-selection-indicator, html.irum-glass .md-calendar-date.md-focus.md-calendar-selected-date .md-calendar-date-selection-indicator { background: var(--ig-accent) !important; color: #fff !important; border-color: transparent !important; }',
+    'html.irum-glass .md-calendar-date.md-focus .md-calendar-date-selection-indicator { background: var(--ig-accent-soft) !important; }',
+    /* 말풍선 · 알림 */
+    'html.irum-glass md-tooltip .md-content { background: #1e293b !important; color: #f8fafc !important; border-radius: 8px !important; }',
+    'html.irum-glass.irum-dark md-tooltip .md-content { background: #e2e8f0 !important; color: #0f172a !important; }',
+    'html.irum-glass md-toast .md-toast-content { background: #1e293b !important; color: #f8fafc !important; border-radius: 12px !important; }',
+
+    /* ---------- 사이드바 맨 위 새로 만들기 버튼 (넓은 화면) ---------- */
+    '#' + CMP_ID + ' { display: none; gap: 8px; margin: 12px 12px 6px; flex: 0 0 auto; }',
+    '@media (min-width: 1280px) {',
+    '  #' + CMP_ID + ':not(.ig-hidden) { display: flex; }',
+    '  html.irum-glass.ig-has-side-compose md-fab-speed-dial.sg-fab-bottom-center:not(.sg-sidenav-close),',
+    '  html.irum-glass.ig-has-side-compose .md-fab.sg-fab-bottom-center:not(.sg-sidenav-close) { display: none !important; }',
+    '}',
+    '#' + CMP_ID + ' button { height: 48px; border-radius: 14px; cursor: pointer; display: inline-flex; align-items: center; font-family: var(--ig-font); }',
+    '#' + CMP_ID + ' .ig-compose-main { flex: 1 1 auto; min-width: 0; gap: 10px; padding: 0 18px; border: 0; color: #fff; font-size: 14px; font-weight: 600;',
+    '  background: linear-gradient(135deg, #3b82f6, #2563eb); box-shadow: 0 6px 18px rgba(37, 99, 235, 0.28); }',
+    '#' + CMP_ID + ' .ig-compose-main span:last-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }',
+    '#' + CMP_ID + ' .ig-compose-main:hover { filter: brightness(1.07); }',
+    '#' + CMP_ID + ' .ig-compose-alt { flex: 0 0 48px; width: 48px; justify-content: center; padding: 0; border: 1px solid var(--ig-line); background: var(--ig-glass-strong); color: var(--ig-accent); }',
+    '#' + CMP_ID + ' .ig-compose-alt:hover { background: var(--ig-accent-soft); }',
+    '#' + CMP_ID + ' .material-icons { font-size: 20px; }',
+    '#' + CMP_ID + ' button:focus-visible { outline: 2px solid var(--ig-accent); outline-offset: 2px; }',
+    '@media print { #' + CMP_ID + ' { display: none !important; } }',
 
     /* ---------- 메일 쓰기 ---------- */
     'html.irum-glass md-backdrop.md-dialog-backdrop { background-color: rgba(15, 23, 42, 0.18) !important; opacity: 1 !important; -webkit-backdrop-filter: blur(3px); backdrop-filter: blur(3px); }',
