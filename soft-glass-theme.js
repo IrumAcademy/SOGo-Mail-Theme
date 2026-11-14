@@ -202,7 +202,23 @@
     return true;
   }
 
-  start.$inject = ['$timeout', '$rootScope'];
+  start.$inject = ['$timeout', '$rootScope', '$injector'];
+  // 색을 지정하지 않은 캘린더는 SOGo 기본 회색(#AAAAAA)이 된다. 이 경우만 포인트 색으로 바꾼다
+  // (사용자가 고른 색은 그대로). 캘린더 모듈이 있는 화면에서만 동작한다
+  function themeDefaultCalendarColor($injector) {
+    try {
+      if (!$injector.has('Calendar')) return;
+      var Calendar = $injector.get('Calendar');
+      var init = Calendar && Calendar.prototype && Calendar.prototype.init;
+      if (!init || init.irumThemed) return;
+      Calendar.prototype.init = function () {
+        var result = init.apply(this, arguments);
+        if (!this.color || /^#a{6}$/i.test(this.color)) this.color = ACCENT;
+        return result;
+      };
+      Calendar.prototype.init.irumThemed = true;
+    } catch (e) {}
+  }
   // SOGo 한국어 번역의 메일함 용량 문구 "0.03% : 10240 MB 사용됨" 은 10240MB 를 이미 쓴 것처럼 읽힌다.
   // 영어 원문은 "0.03% used on 10240 MB" (10240MB 중 0.03% 사용). 이 번역 문구일 때만 바꾼다.
   function fixLabels() {
@@ -213,8 +229,9 @@
     } catch (e) {}
   }
 
-  function start($timeout, $rootScope) {
+  function start($timeout, $rootScope, $injector) {
     fixLabels();
+    themeDefaultCalendarColor($injector);
     injectStyle();
     applyMode();
     // 툴바는 Angular 가 그린 뒤에 생기므로 잠시 재시도
@@ -276,6 +293,11 @@
     '  --ig-pop-shadow: 0 12px 40px rgba(15, 23, 42, 0.18), 0 2px 6px rgba(15, 23, 42, 0.06);',
     '  --ig-danger: #dc2626;',
     '  --ig-on-accent: #ffffff;',
+    // 일정 블록: 캘린더 색 위에 흰 막을 덮어 연하게 비치게 한다
+    '  --ig-event-veil: rgba(255, 255, 255, 0.80);',
+    '  --ig-event-text: #0f172a;',
+    '  --ig-event-text-2: #334155;',
+    '  --ig-event-border: rgba(15, 23, 42, 0.10);',
     '  --ig-radius: 20px;',
     '  --ig-radius-sm: 12px;',
     '  --ig-blur: blur(24px) saturate(160%);',
@@ -307,6 +329,10 @@
     '  --ig-section: rgba(255, 255, 255, 0.035);',
     '  --ig-pop-shadow: 0 16px 48px rgba(0, 0, 0, 0.55);',
     '  --ig-danger: #f87171;',
+    '  --ig-event-veil: rgba(15, 23, 42, 0.62);',
+    '  --ig-event-text: #f1f5f9;',
+    '  --ig-event-text-2: #cbd5e1;',
+    '  --ig-event-border: rgba(255, 255, 255, 0.10);',
     '  --ig-on-accent: #0b1120;',
     '}',
 
@@ -613,6 +639,13 @@
     'html.irum-glass .sg-calendar-date .sg-calendar-day { color: var(--ig-accent) !important; }',
     'html.irum-glass .sg-calendar-date .md-caption { color: var(--ig-text-2) !important; }',
     'html.irum-glass .sg-event { border-radius: 8px !important; }',
+    // 일정 블록: 원색 대신 캘린더 색이 은은하게 비치는 연한 블록. 글자는 테마 글자색
+    // (SOGo 는 캘린더 색으로 배경을 칠하고 대비 색을 글자에 쓴다. 상태 표시는 투명도·점선이라 그대로 둔다)
+    'html.irum-glass .sg-event[class*="bg-folder"]:not(.sg-event--dragging) { background-image: linear-gradient(var(--ig-event-veil), var(--ig-event-veil)) !important; color: var(--ig-event-text) !important; border-width: 1px !important; border-style: solid; border-color: var(--ig-event-border) !important; box-shadow: none !important; }',
+    // 응답 대기 일정은 SOGo 처럼 점선 테두리로 구분한다
+    'html.irum-glass .sg-event--needs-action[class*="bg-folder"] { border-style: dashed !important; border-color: var(--ig-event-text-2) !important; }',
+    'html.irum-glass .sg-event[class*="bg-folder"] md-icon, html.irum-glass .sg-event[class*="bg-folder"] .md-icon, html.irum-glass .sg-event[class*="bg-folder"] .secondary { color: var(--ig-event-text-2) !important; }',
+    'html.irum-glass .sg-event[class*="bg-folder"] .text { color: var(--ig-event-text) !important; }',
     'html.irum-glass md-switch.md-checked .md-bar { background-color: var(--ig-accent-soft) !important; }',
     'html.irum-glass md-switch.md-checked .md-thumb { background-color: var(--ig-accent) !important; }',
 

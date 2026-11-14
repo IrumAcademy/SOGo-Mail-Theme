@@ -29,7 +29,7 @@ The sample messages, names and events in these screenshots are fictional.
 - **Message bodies stay on white paper.** HTML newsletters keep their own colors. In dark mode the message body and the editor stay white as well.
 - **Light and dark.** The theme follows the operating system at first. The sun/moon button in the top toolbar switches it, and the choice is saved in the browser.
 - **Create button at the top of the sidebar.** On wide screens (1280 px and up) *Write a new message*, *New Event* and *New Contact* sit at the top of the sidebar instead of floating over the list. The small button next to it runs the second choice (write in a new window, new task, new list). On narrower screens SOGo's round button stays.
-- **Cleaner calendar.** SOGo's beige grid lines and green tabs become faint lines and the accent color.
+- **Cleaner calendar.** SOGo's beige grid lines and green tabs become faint lines and the accent color. Events show as light blocks tinted with their calendar's color and use the theme's text color instead of solid blocks, and calendars without a chosen color (SOGo's default gray) use the accent color.
 - **Dialogs and pop-ups.** Menus, the event editor, date and time pickers, address suggestions and tooltips use the same colors in light and dark mode, and SOGo's leftover green on radio buttons, checkboxes and sliders is replaced by the accent.
 - **Mobile.** On narrow screens the message view slides over the list without the list showing through.
 - **Accessibility and fallbacks.** Users with `prefers-reduced-transparency` and browsers without `backdrop-filter` get opaque panels. Printing uses plain white paper.
