@@ -639,6 +639,8 @@
     'html.irum-glass .sg-calendar-date .sg-calendar-day { color: var(--ig-accent) !important; }',
     'html.irum-glass .sg-calendar-date .md-caption { color: var(--ig-text-2) !important; }',
     'html.irum-glass .sg-event { border-radius: 8px !important; }',
+    // 월간 보기의 주차 배지(W46): SOGo 기본 30% 둥글림은 가로로 긴 배지를 타원처럼 만든다
+    'html.irum-glass [ui-view=calendars] .sg-calendar-tile-week span { border-radius: 4px !important; padding: 1px 5px !important; }',
     // 일정 블록: 원색 대신 캘린더 색이 은은하게 비치는 연한 블록. 글자는 테마 글자색
     // (SOGo 는 캘린더 색으로 배경을 칠하고 대비 색을 글자에 쓴다. 상태 표시는 투명도·점선이라 그대로 둔다)
     'html.irum-glass .sg-event[class*="bg-folder"]:not(.sg-event--dragging) { background-image: linear-gradient(var(--ig-event-veil), var(--ig-event-veil)) !important; color: var(--ig-event-text) !important; border-width: 1px !important; border-style: solid; border-color: var(--ig-event-border) !important; box-shadow: none !important; }',
