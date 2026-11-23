@@ -629,7 +629,8 @@
     'html.irum-glass [ui-view="calendars"] .days .day .clickableHourCell, html.irum-glass [ui-view="calendars"] .hours .hour { border-bottom-color: var(--ig-line) !important; }',
     'html.irum-glass [ui-view="calendars"] .minutes30 { border-bottom: 1px dashed var(--ig-line) !important; opacity: .7; }',
     'html.irum-glass [ui-view="calendars"] .days .day .clickableHourCell.outOfDay { background-color: rgba(100, 116, 139, 0.045) !important; }',
-    'html.irum-glass .sg-now-line, html.irum-glass .calendarView .sg-now-line { border-color: #ef4444 !important; }',
+    // 현재 시각 선: SOGo 는 <sg-now-line> 요소를 원색 red 로 칠한다. 테마의 부드러운 빨강으로 바꾼다
+    'html.irum-glass [ui-view=calendars] sg-now-line { background: #ef4444 !important; }',
     'html.irum-glass .daysView .sg-calendar-day, html.irum-glass .daysView .sg-day { color: var(--ig-text) !important; }',
     'html.irum-glass .daysView .dayOfToday .sg-calendar-day, html.irum-glass .daysView .dayOfToday .sg-day { color: var(--ig-accent) !important; }',
     'html.irum-glass [ui-view="calendars"] .daysView, html.irum-glass [ui-view="calendars"] .daysView .day, html.irum-glass [ui-view="calendars"] .days .day { border-color: var(--ig-line) !important; }',
