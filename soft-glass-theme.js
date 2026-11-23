@@ -229,9 +229,52 @@
     } catch (e) {}
   }
 
+  // 현재 시각 표시: SOGo 는 오늘 칸에 2px 선(<sg-now-line>)을 긋고 1분마다 top 을 다시 계산한다.
+  // 그 계산 뒤에 선을 "현재 시각이 속한 1시간 칸" 전체를 덮는 네모로 바꾼다 (top·height 만 조정, 색은 CSS)
+  function themeNowSlot($injector) {
+    try {
+      if (!$injector.has('sgNowLineDirective')) return;
+      var ddo = $injector.get('sgNowLineDirective')[0];
+      if (!ddo || !ddo.compile || ddo.compile.irumThemed) return;
+      var compile = ddo.compile;
+      ddo.compile = function () {
+        var link = compile.apply(this, arguments);
+        var post = typeof link === 'function' ? link : link && link.post;
+        if (!post) return link;
+        var wrapped = function (scope) {
+          var result = post.apply(this, arguments);
+          var update = scope.updateLine;
+          if (typeof update === 'function') {
+            scope.updateLine = function () {
+              var r = update.apply(this, arguments);
+              snapToHour(scope);
+              return r;
+            };
+          }
+          return result;
+        };
+        return typeof link === 'function' ? wrapped : angular.extend({}, link, { post: wrapped });
+      };
+      ddo.compile.irumThemed = true;
+    } catch (e) {}
+  }
+  function snapToHour(scope) {
+    var el = scope.lineElement && scope.lineElement[0];
+    var hour = scope.quarterHeight * 4;
+    if (!el || !hour || !document.documentElement.classList.contains('irum-glass')) return;
+    var top = parseFloat(el.style.top);
+    if (isNaN(top)) return;
+    // SOGo 는 선 두께만큼 1px 위로 올려 둔다
+    var start = Math.floor((top + 1) / hour) * hour;
+    el.style.top = start + 'px';
+    el.style.height = hour + 'px';
+    el.classList.add('ig-now-slot');
+  }
+
   function start($timeout, $rootScope, $injector) {
     fixLabels();
     themeDefaultCalendarColor($injector);
+    themeNowSlot($injector);
     injectStyle();
     applyMode();
     // 툴바는 Angular 가 그린 뒤에 생기므로 잠시 재시도
@@ -295,6 +338,8 @@
     '  --ig-on-accent: #ffffff;',
     // 일정 블록: 캘린더 색 위에 흰 막을 덮어 연하게 비치게 한다
     '  --ig-event-veil: rgba(255, 255, 255, 0.80);',
+    '  --ig-now-fill: rgba(30, 64, 175, 0.10);',
+    '  --ig-now-border: rgba(30, 64, 175, 0.70);',
     '  --ig-event-text: #0f172a;',
     '  --ig-event-text-2: #334155;',
     '  --ig-event-border: rgba(15, 23, 42, 0.10);',
@@ -330,6 +375,8 @@
     '  --ig-pop-shadow: 0 16px 48px rgba(0, 0, 0, 0.55);',
     '  --ig-danger: #f87171;',
     '  --ig-event-veil: rgba(15, 23, 42, 0.62);',
+    '  --ig-now-fill: rgba(96, 165, 250, 0.14);',
+    '  --ig-now-border: rgba(147, 197, 253, 0.75);',
     '  --ig-event-text: #f1f5f9;',
     '  --ig-event-text-2: #cbd5e1;',
     '  --ig-event-border: rgba(255, 255, 255, 0.10);',
@@ -629,10 +676,10 @@
     'html.irum-glass [ui-view="calendars"] .days .day .clickableHourCell, html.irum-glass [ui-view="calendars"] .hours .hour { border-bottom-color: var(--ig-line) !important; }',
     'html.irum-glass [ui-view="calendars"] .minutes30 { border-bottom: 1px dashed var(--ig-line) !important; opacity: .7; }',
     'html.irum-glass [ui-view="calendars"] .days .day .clickableHourCell.outOfDay { background-color: rgba(100, 116, 139, 0.045) !important; }',
-    // 현재 시각 선: SOGo 는 <sg-now-line> 요소를 원색 red 로 칠한다. 테마의 부드러운 빨강으로 바꾼다
-    'html.irum-glass [ui-view=calendars] sg-now-line { background: #ef4444 !important; border-radius: 2px; }',
-    // 선 왼쪽 끝의 현재 위치 표시: 모서리가 둥근 작은 네모 (칸 밖으로 나가면 잘리므로 칸 안쪽에 둔다)
-    'html.irum-glass [ui-view=calendars] sg-now-line::before { content: ""; position: absolute; left: 0; top: 50%; width: 10px; height: 10px; margin-top: -5px; border-radius: 3px; background: #ef4444; }',
+    // 현재 시각: SOGo 의 원색 빨간 선 대신, 현재 시각이 속한 1시간 칸을 덮는 진한 파랑의 부드러운 네모 (themeNowSlot)
+    // 일정 위에 겹쳐도 클릭은 아래로 통과한다
+    'html.irum-glass [ui-view=calendars] sg-now-line { background: var(--ig-now-border) !important; }',
+    'html.irum-glass [ui-view=calendars] sg-now-line.ig-now-slot { background: var(--ig-now-fill) !important; border: 1.5px solid var(--ig-now-border); border-radius: 8px; box-sizing: border-box; pointer-events: none; }',
     'html.irum-glass .daysView .sg-calendar-day, html.irum-glass .daysView .sg-day { color: var(--ig-text) !important; }',
     'html.irum-glass .daysView .dayOfToday .sg-calendar-day, html.irum-glass .daysView .dayOfToday .sg-day { color: var(--ig-accent) !important; }',
     'html.irum-glass [ui-view="calendars"] .daysView, html.irum-glass [ui-view="calendars"] .daysView .day, html.irum-glass [ui-view="calendars"] .days .day { border-color: var(--ig-line) !important; }',
