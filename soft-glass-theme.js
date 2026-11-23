@@ -439,7 +439,9 @@
     'html.irum-glass md-toolbar, html.irum-glass md-toolbar.md-hue-1, html.irum-glass md-toolbar.md-hue-2, html.irum-glass md-toolbar.md-accent {',
     '  background: transparent !important; background-color: transparent !important; color: var(--ig-text) !important; box-shadow: none !important;',
     '}',
-    'html.irum-glass md-toolbar md-icon, html.irum-glass md-toolbar .md-button, html.irum-glass md-toolbar a, html.irum-glass md-toolbar label { color: var(--ig-icon) !important; }',
+    // 캘린더 색상 선택 버튼(sg-color-picker)은 SOGo 가 아이콘을 캘린더 색으로 칠하므로 덮지 않는다.
+    // 캘린더별 스위치·체크박스(md-switch-folder<ID>, checkbox-folder<ID>)도 SOGo 가 캘린더 색을 쓰므로 파랑으로 덮지 않는다
+    'html.irum-glass md-toolbar md-icon:not(sg-color-picker md-icon), html.irum-glass md-toolbar .md-button, html.irum-glass md-toolbar a, html.irum-glass md-toolbar label { color: var(--ig-icon) !important; }',
     'html.irum-glass md-toolbar.toolbar-main { min-height: 56px !important; }',
     'html.irum-glass .sg-date-group, html.irum-glass .sg-date-group * { color: var(--ig-text-2) !important; }',
     'html.irum-glass .view-list > md-toolbar { border-bottom: 1px solid var(--ig-line) !important; }',
@@ -539,8 +541,8 @@
     'html.irum-glass md-radio-button .md-off, html.irum-glass md-checkbox:not(.md-checked) .md-icon { border-color: var(--ig-text-3) !important; }',
     'html.irum-glass md-radio-button.md-checked .md-off { border-color: var(--ig-accent) !important; }',
     'html.irum-glass md-radio-button .md-on { background-color: var(--ig-accent) !important; }',
-    'html.irum-glass md-checkbox.md-checked .md-icon { background-color: var(--ig-accent) !important; border-color: transparent !important; }',
-    'html.irum-glass md-checkbox.md-checked .md-icon:after { border-color: var(--ig-on-accent) !important; }',
+    'html.irum-glass md-checkbox.md-checked:not([class*="checkbox-folder"]) .md-icon { background-color: var(--ig-accent) !important; border-color: transparent !important; }',
+    'html.irum-glass md-checkbox.md-checked:not([class*="checkbox-folder"]) .md-icon:after { border-color: var(--ig-on-accent) !important; }',
     'html.irum-glass md-checkbox .md-icon { border-radius: 5px !important; }',
     'html.irum-glass md-radio-button .md-ripple, html.irum-glass md-checkbox .md-ripple { color: var(--ig-accent) !important; }',
     /* 비활성 컨트롤: 포인트 색 대신 회색으로, 조작할 수 없어 보이게 */
@@ -635,7 +637,7 @@
     'html.irum-glass input::placeholder, html.irum-glass textarea::placeholder { color: var(--ig-text-3) !important; opacity: 1; }',
     'html.irum-glass .pseudo-input-label, html.irum-glass md-dialog label { color: var(--ig-text-2) !important; }',
     'html.irum-glass md-dialog.sg-mail-editor .pseudo-input-container { border-color: var(--ig-line) !important; }',
-    'html.irum-glass md-dialog md-icon, html.irum-glass md-dialog .sg-icon-button { color: var(--ig-icon) !important; }',
+    'html.irum-glass md-dialog md-icon:not(sg-color-picker md-icon), html.irum-glass md-dialog .sg-icon-button { color: var(--ig-icon) !important; }',
     'html.irum-glass .md-chips { box-shadow: 0 1px 0 var(--ig-line) !important; }',
     /* CKEditor 5: 편집 영역은 흰 종이, 둥근 모서리 */
     'html.irum-glass .ck.ck-editor { margin: 4px 12px 8px; border-radius: 12px; overflow: hidden; border: 1px solid var(--ig-line); }',
@@ -704,8 +706,8 @@
     'html.irum-glass .sg-event--needs-action[class*="bg-folder"] { border-style: dashed !important; border-color: var(--ig-event-text-2) !important; }',
     'html.irum-glass .sg-event[class*="bg-folder"] md-icon, html.irum-glass .sg-event[class*="bg-folder"] .md-icon, html.irum-glass .sg-event[class*="bg-folder"] .secondary { color: var(--ig-event-text-2) !important; }',
     'html.irum-glass .sg-event[class*="bg-folder"] .text { color: var(--ig-event-text) !important; }',
-    'html.irum-glass md-switch.md-checked .md-bar { background-color: var(--ig-accent-soft) !important; }',
-    'html.irum-glass md-switch.md-checked .md-thumb { background-color: var(--ig-accent) !important; }',
+    'html.irum-glass md-switch.md-checked:not([class*="md-switch-folder"]) .md-bar { background-color: var(--ig-accent-soft) !important; }',
+    'html.irum-glass md-switch.md-checked:not([class*="md-switch-folder"]) .md-thumb { background-color: var(--ig-accent) !important; }',
 
     /* ---------- 진행 표시 ---------- */
     'html.irum-glass md-progress-linear .md-container { background-color: var(--ig-accent-soft) !important; }',
