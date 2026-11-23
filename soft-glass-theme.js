@@ -381,6 +381,9 @@
     'html.irum-glass .view-list:not(.view-list--close) { margin: 0 6px 10px 10px !important; }',
     /* 좁은 화면에서는 SOGo 가 목록에 min-width: 100% 를 건다. 여백만큼 크기를 줄여야 페이지가 넘치지 않는다 */
     '@media (max-width: 959px) { html.irum-glass .view-list:not(.view-list--close) { margin: 0 8px 8px !important; min-width: 0 !important; max-width: calc(100% - 16px) !important; max-height: calc(100% - 8px) !important; } }',
+    /* 캘린더의 일정·할 일 목록은 바깥 .view-list 안의 md-content.view-list 가 직접 스크롤한다.
+       위의 유리 패널(overflow: hidden)과 바깥 여백 규칙이 여기까지 내려오면 목록이 스크롤되지 않으므로 되돌린다 */
+    'html.irum-glass .view-list .view-list.view-list { margin: 0 !important; max-width: none !important; max-height: none !important; overflow: auto; }',
     'html.irum-glass .view-detail { padding: 0 10px 10px 4px !important; }',
     'html.irum-glass .view-detail md-card { margin: 0 !important; }',
     'html.irum-glass .md-whiteframe-z1, html.irum-glass .md-whiteframe-1dp, html.irum-glass .md-whiteframe-z2 { box-shadow: none !important; }',
