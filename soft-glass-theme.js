@@ -630,7 +630,9 @@
     'html.irum-glass [ui-view="calendars"] .minutes30 { border-bottom: 1px dashed var(--ig-line) !important; opacity: .7; }',
     'html.irum-glass [ui-view="calendars"] .days .day .clickableHourCell.outOfDay { background-color: rgba(100, 116, 139, 0.045) !important; }',
     // 현재 시각 선: SOGo 는 <sg-now-line> 요소를 원색 red 로 칠한다. 테마의 부드러운 빨강으로 바꾼다
-    'html.irum-glass [ui-view=calendars] sg-now-line { background: #ef4444 !important; }',
+    'html.irum-glass [ui-view=calendars] sg-now-line { background: #ef4444 !important; border-radius: 2px; }',
+    // 선 왼쪽 끝의 현재 위치 표시: 모서리가 둥근 작은 네모 (칸 밖으로 나가면 잘리므로 칸 안쪽에 둔다)
+    'html.irum-glass [ui-view=calendars] sg-now-line::before { content: ""; position: absolute; left: 0; top: 50%; width: 10px; height: 10px; margin-top: -5px; border-radius: 3px; background: #ef4444; }',
     'html.irum-glass .daysView .sg-calendar-day, html.irum-glass .daysView .sg-day { color: var(--ig-text) !important; }',
     'html.irum-glass .daysView .dayOfToday .sg-calendar-day, html.irum-glass .daysView .dayOfToday .sg-day { color: var(--ig-accent) !important; }',
     'html.irum-glass [ui-view="calendars"] .daysView, html.irum-glass [ui-view="calendars"] .daysView .day, html.irum-glass [ui-view="calendars"] .days .day { border-color: var(--ig-line) !important; }',
@@ -645,6 +647,9 @@
     'html.irum-glass .sg-event { border-radius: 8px !important; }',
     // 월간 보기의 주차 배지(W46): SOGo 기본 30% 둥글림은 가로로 긴 배지를 타원처럼 만든다
     'html.irum-glass [ui-view=calendars] .sg-calendar-tile-week span { border-radius: 4px !important; padding: 1px 5px !important; }',
+    // 월간 보기의 오늘 날짜: SOGo 는 18px 원 안에 숫자를 넣어 두 자리 날짜("23")가 원 밖으로 삐져나온다.
+    // 숫자 폭만큼 늘어나는 둥근 네모로 바꾼다 (주차 배지·현재 시각 표시와 같은 모양)
+    'html.irum-glass [ui-view=calendars] .monthView md-grid-tile.dayOfToday .sg-calendar-tile-header > span { box-sizing: border-box; min-width: 22px; height: 20px; line-height: 20px; padding: 0 5px; border-radius: 5px !important; font-variant-numeric: tabular-nums; }',
     // 일정 블록: 원색 대신 캘린더 색이 은은하게 비치는 연한 블록. 글자는 테마 글자색
     // (SOGo 는 캘린더 색으로 배경을 칠하고 대비 색을 글자에 쓴다. 상태 표시는 투명도·점선이라 그대로 둔다)
     'html.irum-glass .sg-event[class*="bg-folder"]:not(.sg-event--dragging) { background-image: linear-gradient(var(--ig-event-veil), var(--ig-event-veil)) !important; color: var(--ig-event-text) !important; border-width: 1px !important; border-style: solid; border-color: var(--ig-event-border) !important; box-shadow: none !important; }',
